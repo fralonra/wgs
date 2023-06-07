@@ -1,6 +1,6 @@
 [package]
 name = "wgs_core"
-version = "0.0.1"
+version = "0.0.2"
 authors = ["Fralonra <zoronlivingston@gmail.com>"]
 description = "Wgs format"
 edition = "2021"
