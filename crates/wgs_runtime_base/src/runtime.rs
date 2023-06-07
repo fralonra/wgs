@@ -6,6 +6,8 @@ pub trait RuntimeExt {
 
     fn change_texture(&mut self, index: usize, width: u32, height: u32, buffer: Vec<u8>);
 
+    fn compile(&mut self) -> Result<()>;
+
     fn load(&mut self, wgs: WgsData) -> Result<()>;
 
     fn pause(&mut self);
@@ -20,11 +22,11 @@ pub trait RuntimeExt {
 
     fn resume(&mut self);
 
+    fn set_wgs_frag(&mut self, shader_frag: &str);
+
     fn set_wgs_name(&mut self, name: &str);
 
     fn update_cursor(&mut self, cursor: [f32; 2]);
-
-    fn update_frag(&mut self, shader_frag: &str) -> Result<()>;
 
     fn update_mouse_press(&mut self);
 

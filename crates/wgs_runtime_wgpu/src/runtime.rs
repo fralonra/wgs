@@ -59,6 +59,25 @@ impl RuntimeExt for Runtime {
         self.wgs.change_texture(index, width, height, buffer);
     }
 
+    fn compile(&mut self) -> Result<()> {
+        let mut bind_group_layouts = vec![&self.uniform_bind_group_layout];
+        for (layout, _) in &self.texture_bind_groups {
+            bind_group_layouts.push(layout);
+        }
+
+        let shader_frag = concat_shader_frag(&self.wgs.frag(), self.wgs.textures_ref().len());
+
+        self.pipeline = build_pipeline(
+            &shader_frag,
+            &self.shader_vert,
+            &bind_group_layouts,
+            &self.device,
+            self.format,
+        )?;
+
+        Ok(())
+    }
+
     fn load(&mut self, wgs: wgs_core::WgsData) -> Result<()> {
         let (texture_bind_groups, pipeline) = prepare_wgs(
             &wgs,
@@ -184,6 +203,10 @@ impl RuntimeExt for Runtime {
         self.time_instant.resume();
     }
 
+    fn set_wgs_frag(&mut self, shader_frag: &str) {
+        self.wgs.set_frag(shader_frag)
+    }
+
     fn set_wgs_name(&mut self, name: &str) {
         self.wgs.set_name(name);
     }
@@ -194,23 +217,6 @@ impl RuntimeExt for Runtime {
         }
 
         self.uniform.cursor = [cursor[0], self.uniform.resolution[1] - cursor[1]];
-    }
-
-    fn update_frag(&mut self, shader_frag: &str) -> Result<()> {
-        let mut bind_group_layouts = vec![&self.uniform_bind_group_layout];
-        for (layout, _) in &self.texture_bind_groups {
-            bind_group_layouts.push(layout);
-        }
-
-        self.pipeline = build_pipeline(
-            shader_frag,
-            &self.shader_vert,
-            &bind_group_layouts,
-            &self.device,
-            self.format,
-        )?;
-
-        Ok(())
     }
 
     fn update_mouse_press(&mut self) {
