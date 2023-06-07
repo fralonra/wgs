@@ -1,0 +1,14 @@
+[package]
+name = "wgs_core"
+version = "0.0.1"
+authors = ["Fralonra <zoronlivingston@gmail.com>"]
+description = "Wgs format"
+edition = "2021"
+homepage = "https://github.com/fralonra/wgs"
+license = "MIT"
+readme = "../../README.md"
+repository = "https://github.com/fralonra/wgs"
+keywords = ["wgs", "wgsl", "graphics", "creative-coding"]
+
+[dependencies]
+binrw = "0.11"
