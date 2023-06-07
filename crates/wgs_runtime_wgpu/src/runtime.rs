@@ -60,20 +60,16 @@ impl RuntimeExt for Runtime {
     }
 
     fn compile(&mut self) -> Result<()> {
-        let mut bind_group_layouts = vec![&self.uniform_bind_group_layout];
-        for (layout, _) in &self.texture_bind_groups {
-            bind_group_layouts.push(layout);
-        }
-
-        let shader_frag = concat_shader_frag(&self.wgs.frag(), self.wgs.textures_ref().len());
-
-        self.pipeline = build_pipeline(
-            &shader_frag,
-            &self.shader_vert,
-            &bind_group_layouts,
+        self.pipeline = prepare_wgs_pipeline(
+            &self.wgs,
             &self.device,
             self.format,
+            &self.shader_vert,
+            &self.texture_bind_groups,
+            &self.uniform_bind_group_layout,
         )?;
+
+        self.restart();
 
         Ok(())
     }
@@ -645,19 +641,30 @@ fn prepare_wgs(
     Vec<(wgpu::BindGroupLayout, wgpu::BindGroup)>,
     wgpu::RenderPipeline,
 )> {
-    let textures = wgs
-        .textures_ref()
-        .iter()
-        .map(|texture| (texture.width, texture.height, &texture.data))
-        .collect::<Vec<(u32, u32, &Vec<u8>)>>();
+    let texture_bind_groups = prepare_wgs_textures(wgs, device, queue, sampler);
 
-    let texture_bind_groups = textures
-        .iter()
-        .map(|(width, height, data)| create_texture(device, queue, sampler, *width, *height, &data))
-        .collect::<Vec<(wgpu::BindGroupLayout, wgpu::BindGroup)>>();
+    let pipeline = prepare_wgs_pipeline(
+        wgs,
+        device,
+        format,
+        shader_vert,
+        &texture_bind_groups,
+        uniform_bind_group_layout,
+    )?;
 
+    Ok((texture_bind_groups, pipeline))
+}
+
+fn prepare_wgs_pipeline(
+    wgs: &WgsData,
+    device: &wgpu::Device,
+    format: wgpu::TextureFormat,
+    shader_vert: &str,
+    texture_bind_groups: &Vec<(wgpu::BindGroupLayout, wgpu::BindGroup)>,
+    uniform_bind_group_layout: &wgpu::BindGroupLayout,
+) -> Result<wgpu::RenderPipeline> {
     let mut bind_group_layouts = vec![uniform_bind_group_layout];
-    for (layout, _) in &texture_bind_groups {
+    for (layout, _) in texture_bind_groups {
         bind_group_layouts.push(layout);
     }
 
@@ -671,7 +678,25 @@ fn prepare_wgs(
         format,
     )?;
 
-    Ok((texture_bind_groups, pipeline))
+    Ok(pipeline)
+}
+
+fn prepare_wgs_textures(
+    wgs: &WgsData,
+    device: &wgpu::Device,
+    queue: &wgpu::Queue,
+    sampler: &wgpu::Sampler,
+) -> Vec<(wgpu::BindGroupLayout, wgpu::BindGroup)> {
+    let textures = wgs
+        .textures_ref()
+        .iter()
+        .map(|texture| (texture.width, texture.height, &texture.data))
+        .collect::<Vec<(u32, u32, &Vec<u8>)>>();
+
+    textures
+        .iter()
+        .map(|(width, height, data)| create_texture(device, queue, sampler, *width, *height, &data))
+        .collect()
 }
 
 fn setup_uniform(
