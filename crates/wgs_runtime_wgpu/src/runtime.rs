@@ -38,7 +38,6 @@ impl RuntimeExt for Runtime {
             &self.device,
             &self.queue,
             &self.sampler,
-            self.format,
             width,
             height,
             &buffer,
@@ -52,7 +51,6 @@ impl RuntimeExt for Runtime {
             &self.device,
             &self.queue,
             &self.sampler,
-            self.format,
             width,
             height,
             &buffer,
@@ -505,7 +503,6 @@ fn create_texture(
     device: &wgpu::Device,
     queue: &wgpu::Queue,
     sampler: &wgpu::Sampler,
-    format: wgpu::TextureFormat,
     width: u32,
     height: u32,
     buffer: &[u8],
@@ -521,10 +518,10 @@ fn create_texture(
         mip_level_count: 1,
         sample_count: 1,
         dimension: wgpu::TextureDimension::D2,
-        format,
+        format: wgpu::TextureFormat::Rgba8UnormSrgb,
         usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
         label: Some("Diffuse Texture"),
-        view_formats: &[format],
+        view_formats: &[wgpu::TextureFormat::Rgba8UnormSrgb],
     });
 
     queue.write_texture(
@@ -609,12 +606,7 @@ where
         .request_adapter(&wgpu::RequestAdapterOptions::default())
         .await
     {
-        let format = surface
-            .get_capabilities(&adapter)
-            .formats
-            .first()
-            .copied()
-            .expect("Get preferred format.");
+        let format = wgpu::TextureFormat::Bgra8UnormSrgb;
 
         let adapter_features = adapter.features();
 
@@ -655,9 +647,7 @@ fn prepare_wgs(
 
     let texture_bind_groups = textures
         .iter()
-        .map(|(width, height, data)| {
-            create_texture(device, queue, sampler, format, *width, *height, &data)
-        })
+        .map(|(width, height, data)| create_texture(device, queue, sampler, *width, *height, &data))
         .collect::<Vec<(wgpu::BindGroupLayout, wgpu::BindGroup)>>();
 
     let mut bind_group_layouts = vec![uniform_bind_group_layout];
@@ -737,7 +727,13 @@ fn trim_image_buffer(viewport: &Viewport, align_width: usize, buffer: &[u8]) -> 
     let len_per_row = width * DATA_PER_PIXEL as usize * U8_SIZE as usize;
 
     for chunk in buffer.chunks(align_width) {
-        output.append(&mut chunk[pad_before_per_row..pad_before_per_row + len_per_row].to_owned());
+        for chunk in chunk[pad_before_per_row..pad_before_per_row + len_per_row].chunks(4) {
+            // Convert BGRA8 to RGBA8
+            output.push(chunk[2]);
+            output.push(chunk[1]);
+            output.push(chunk[0]);
+            output.push(chunk[3]);
+        }
     }
 
     output
