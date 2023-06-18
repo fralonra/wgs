@@ -14,6 +14,7 @@ pub struct Runtime {
     captured_callback: Option<(Viewport, Box<dyn FnOnce(&mut Self, u32, u32, Vec<u8>)>)>,
     device: wgpu::Device,
     format: wgpu::TextureFormat,
+    height: f32,
     is_paused: bool,
     pipeline: wgpu::RenderPipeline,
     queue: wgpu::Queue,
@@ -30,6 +31,7 @@ pub struct Runtime {
     uniform_buffer: wgpu::Buffer,
     viewport: Option<Viewport>,
     wgs: WgsData,
+    width: f32,
 }
 
 impl RuntimeExt for Runtime {
@@ -119,6 +121,12 @@ impl RuntimeExt for Runtime {
                 label: Some("Render Encoder"),
             });
 
+        if let Some(viewport) = &self.viewport {
+            self.uniform.resolution = [viewport.width, viewport.height];
+        } else {
+            self.uniform.resolution = [self.width, self.height]
+        }
+
         self.uniform.time = self.time_instant.elapsed().as_secs_f32();
 
         self.queue
@@ -179,7 +187,8 @@ impl RuntimeExt for Runtime {
             },
         );
 
-        self.uniform.resolution = [width / 2.0, height];
+        self.width = width;
+        self.height = height;
     }
 
     fn restart(&mut self) {
@@ -268,6 +277,7 @@ impl Runtime {
             captured_callback: None,
             device,
             format,
+            height: 0.0,
             is_paused: false,
             pipeline,
             queue,
@@ -284,6 +294,7 @@ impl Runtime {
             uniform_buffer,
             viewport,
             wgs,
+            width: 0.0,
         })
     }
 
