@@ -5,6 +5,8 @@ mod texture;
 pub use data::WgsData;
 
 pub const EXTENSION: &'static str = "wgs";
+pub const VERSION: u32 = 1;
+
 pub const FRAG_DEFAULT: &'static str = include_str!("./assets/frag.default.wgsl");
 pub const VERT_DEFAULT: &'static str = include_str!("./assets/vert.wgsl");
 

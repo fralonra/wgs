@@ -1,3 +1,4 @@
+use crate::VERSION;
 use binrw::{binrw, NullString};
 
 #[derive(Debug)]
@@ -6,14 +7,17 @@ use binrw::{binrw, NullString};
 pub struct Meta {
     pub name: NullString,
     pub texture_count: u8,
+    pub version: u32,
 }
 
 impl Meta {
     pub fn new(name: &str) -> Self {
         let name = NullString(name.as_bytes().to_vec());
+
         Self {
             name,
             texture_count: 0,
+            version: VERSION,
         }
     }
 }
