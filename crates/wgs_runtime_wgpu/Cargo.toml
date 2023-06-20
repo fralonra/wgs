@@ -10,6 +10,13 @@ readme = "../../README.md"
 repository = "https://github.com/fralonra/wgs"
 keywords = ["wgs", "wgsl", "graphics", "creative-coding"]
 
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[profile.release]
+lto = true
+opt-level = 'z'
+
 [dependencies]
 anyhow = "1.0"
 bytemuck = { version = "1.12", features = ["derive"] }
@@ -18,3 +25,12 @@ raw-window-handle = "0.5"
 wgpu = "0.16"
 wgs_core = { version = "0.0.2", path = "../wgs_core" }
 wgs_runtime_base = { version = "0.0.2", path = "../wgs_runtime_base" }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+console_error_panic_hook = "0.1"
+js-sys = "0.3"
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+wasm-timer = "0.2"
+web-sys = { version = "0.3", features = ["HtmlCanvasElement"] }
+wgpu = { version = "0.16", features = ["webgl"] }

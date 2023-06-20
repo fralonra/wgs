@@ -11,6 +11,9 @@ pub const FRAG_DEFAULT: &'static str = include_str!("./assets/frag.default.wgsl"
 pub const VERT_DEFAULT: &'static str = include_str!("./assets/vert.wgsl");
 
 const FRAG_PREFIX: &'static str = include_str!("./assets/frag.prefix.wgsl");
+#[cfg(target_arch = "wasm32")]
+const FRAG_SUFFIX: &'static str = include_str!("./assets/frag.suffix.gl.wgsl");
+#[cfg(not(target_arch = "wasm32"))]
 const FRAG_SUFFIX: &'static str = include_str!("./assets/frag.suffix.wgsl");
 
 pub fn concat_shader_frag(main_image: &str, texture_count: usize) -> String {
