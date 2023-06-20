@@ -17,6 +17,8 @@ A `wgs` file mainly consists of three parts:
 
 The latest version of `wgs` is **wgs 1**.
 
+_Notice_ The very first version of `wgs` does not include `version` field and uses a `texture` function to render textures which is conflicting with the keyword in `GLSL`. Thus, this first version is not compatible with any later versions.
+
 ## How to write wgs
 
 [WgShadertoy](https://github.com/fralonra/wgshadertoy) is a cross-platform program helps you read and write your `wgs` files.
