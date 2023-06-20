@@ -78,4 +78,4 @@ You can write your own runtime implementation as long as it implements [`Runtime
 
 `wgs_runtime_wgpu` also compiles for Wasm32 architecture.
 
-You can install it from [npm](https://www.npmjs.com/package/wgs_runtime_wgpu) or use a high-level library [`wgs-player`](https://github.com/fralonra/wgs-player).
+You can install it from [npm](https://www.npmjs.com/package/wgs-runtime-wgpu) or use a high-level library [`wgs-player`](https://github.com/fralonra/wgs-player).
