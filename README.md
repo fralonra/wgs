@@ -1,5 +1,9 @@
 # Wgs
 
+[![Latest version](https://img.shields.io/crates/v/wgs_core.svg)](https://crates.io/crates/wgs_core)
+[![Documentation](https://docs.rs/wgs_core/badge.svg)](https://docs.rs/wgs_core)
+![MIT](https://img.shields.io/badge/license-MIT-blue.svg)
+
 `wgs` is a binary format that represents pixel shader programs. Inspired by [Shadertoy](https://www.shadertoy.com/) but uses [WGSL](https://www.w3.org/TR/WGSL/) instead. It can now runs on native platforms and Web as well thanks to [wgpu-rs](https://wgpu.rs/).
 
 ## File strcuture
