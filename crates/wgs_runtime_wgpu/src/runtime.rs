@@ -101,6 +101,10 @@ impl RuntimeExt for Runtime {
     }
 
     fn pause(&mut self) {
+        if self.is_paused {
+            return;
+        }
+
         self.is_paused = true;
 
         self.time_instant.pause();
@@ -202,6 +206,10 @@ impl RuntimeExt for Runtime {
     }
 
     fn resume(&mut self) {
+        if !self.is_paused {
+            return;
+        }
+
         self.is_paused = false;
 
         self.time_instant.resume();
@@ -906,3 +914,11 @@ async fn view_into_buffer(
         bail!("Failed to map the buffer.")
     }
 }
+
+// fn log(msg: &str) {
+//     #[cfg(target_arch = "wasm32")]
+//     web_sys::console::log_1(&msg.into());
+
+//     #[cfg(not(target_arch = "wasm32"))]
+//     println!("{}", msg);
+// }
