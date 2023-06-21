@@ -26,6 +26,10 @@ impl WebRuntime {
         self.inner.compile().unwrap();
     }
 
+    pub fn is_paused(&self) -> bool {
+        self.inner.is_paused()
+    }
+
     pub fn load(&mut self, raw_wgs: &[u8]) {
         let mut cursor = Cursor::new(raw_wgs);
 
