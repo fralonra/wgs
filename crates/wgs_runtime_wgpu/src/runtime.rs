@@ -5,13 +5,13 @@ use wgpu::util::DeviceExt;
 use wgs_core::{concat_shader_frag, WgsData, VERT_DEFAULT};
 use wgs_runtime_base::RuntimeExt;
 
-pub const UNIFORM_GROUP_ID: u32 = 0;
-
 #[cfg(not(target_arch = "wasm32"))]
 const DATA_PER_PIXEL: u32 = 4;
 #[cfg(not(target_arch = "wasm32"))]
 const U8_SIZE: u32 = std::mem::size_of::<u8>() as u32;
+const UNIFORM_GROUP_ID: u32 = 0;
 
+/// The wgpu wgs runtime.
 pub struct Runtime {
     #[cfg(not(target_arch = "wasm32"))]
     captured_callback: Option<(Viewport, Box<dyn FnOnce(&mut Self, u32, u32, Vec<u8>)>)>,
@@ -268,6 +268,30 @@ impl Runtime {
         Self::with_instance_and_surface(wgs, viewport, instance, surface).await
     }
 
+    /// Creates a new runtime instance.
+    /// 
+    /// # Examples
+    /// 
+    /// ```rust
+    /// use wgs_core::WgsData;
+    /// use wgs_runtime_wgpu::{Runtime, RuntimeExt};
+    /// use winit::{event::WindowEvent, event_loop::EventLoop, window::Window};
+    ///
+    /// fn main() {
+    ///     let event_loop = EventLoop::new();
+    ///
+    ///     let window = Window::new(&event_loop).unwrap();
+    ///
+    ///     let mut runtime =
+    ///         futures::executor::block_on(Runtime::new(&window, WgsData::default(), None)).unwrap();
+    ///
+    ///     let size = window.inner_size();
+    ///
+    ///     runtime.resize(size.width as f32, size.height as f32);
+    /// 
+    ///     // Dealing with events.
+    /// }
+    /// ```
     #[cfg(not(target_arch = "wasm32"))]
     pub async fn new<W>(w: &W, wgs: WgsData, viewport: Option<Viewport>) -> Result<Self>
     where
@@ -280,6 +304,7 @@ impl Runtime {
         Self::with_instance_and_surface(wgs, viewport, instance, surface).await
     }
 
+    /// Creates a new runtime with given [`wgpu::Instance`] and [`wgpu::Surface`].
     pub async fn with_instance_and_surface(
         wgs: WgsData,
         viewport: Option<Viewport>,
@@ -338,14 +363,23 @@ impl Runtime {
         })
     }
 
+    /// Returns the [`wgpu::Device`].
     pub fn device_ref(&self) -> &wgpu::Device {
         &self.device
     }
 
+    /// Returns the [`wgpu::TextureFormat`] used in the program.
     pub fn format(&self) -> wgpu::TextureFormat {
         self.format
     }
 
+    /// Finishes the current working frame and presents it.
+    /// 
+    /// Needs to be called after [`Self::frame_start`] and at the end of each frame.
+    /// 
+    /// # Errors
+    /// 
+    /// - Will return an error if [`Self::frame_start`] haven't been called first.
     pub fn frame_finish(&mut self) -> Result<()> {
         if self.surface_texture.is_none() {
             bail!("No actived wgpu::SurfaceTexture found.")
@@ -374,6 +408,13 @@ impl Runtime {
         Ok(())
     }
 
+    /// Starts a new frame.
+    /// 
+    /// Needs to be called before [`Self::frame_finish`] and at the begining of each frame.
+    /// 
+    /// # Errors
+    /// 
+    /// - Will return an error if [`Self::frame_finish()`] haven't been called at the end of the last frame.
     pub fn frame_start(&mut self) -> Result<()> {
         if self.surface_texture.is_some() {
             bail!("Non-finished wgpu::SurfaceTexture found.")
@@ -395,14 +436,19 @@ impl Runtime {
         Ok(())
     }
 
+    /// Returns whether the wgs rendering is currently paused.
     pub fn is_paused(&self) -> bool {
         self.is_paused
     }
 
+    /// The maximum number of textures that can be used.
+    /// 
+    /// Depends on the [`wgpu::Limits::max_bind_groups`] of [`wgpu::Device`].
     pub fn max_texture_count(&self) -> u32 {
         self.device.limits().max_bind_groups
     }
 
+    /// Pops an error scope from [`wgpu::Device`]. [Read more](wgpu::Device::pop_error_scope).
     pub fn pop_error_scope(&mut self) -> Option<wgpu::Error> {
         let error_scope = futures::executor::block_on(self.device.pop_error_scope());
 
@@ -411,6 +457,15 @@ impl Runtime {
         error_scope
     }
 
+    /// Renders other stuff on the target surface besides the wgs content.
+    /// 
+    /// # Examples
+    /// 
+    /// ```rust
+    /// runtime.render_with(|_device, _queue, _view| {
+    ///    // Other rendering like ui etc.
+    /// }).unwrap();
+    /// ```
     pub fn render_with<F>(&mut self, mut f: F) -> Result<()>
     where
         F: FnMut(&wgpu::Device, &wgpu::Queue, &wgpu::TextureView) -> Result<()>,
@@ -426,6 +481,18 @@ impl Runtime {
         Ok(())
     }
 
+    /// Request a capture on the given [`Viewport`] asynchronously.
+    /// 
+    /// # Examples
+    /// 
+    /// ```rust
+    /// runtime.request_capture_image(
+    ///    &viewport,
+    ///    |runtime, width, height, buffer| {
+    ///        /// Doing something with the buffer.
+    ///    },
+    ///);
+    /// ```
     #[cfg(not(target_arch = "wasm32"))]
     pub fn request_capture_image<F>(&mut self, viewport: &Viewport, f: F)
     where
@@ -434,6 +501,7 @@ impl Runtime {
         self.captured_callback = Some((viewport.clone(), Box::new(f)));
     }
 
+    /// Sets the [`Viewport`] for render wgs.
     pub fn set_viewport(&mut self, viewport: Option<Viewport>) {
         self.viewport = viewport;
     }

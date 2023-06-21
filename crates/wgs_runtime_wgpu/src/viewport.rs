@@ -1,3 +1,4 @@
+/// Specifies the viewport region. [Read more](wgpu::RenderPass::set_viewport).
 #[derive(Clone, Default)]
 pub struct Viewport {
     pub x: f32,
