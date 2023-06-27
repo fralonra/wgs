@@ -8,7 +8,7 @@ pub use data::WgsData;
 
 /// The extension of a wgs file.
 pub const EXTENSION: &'static str = "wgs";
-/// The version ofa `wgs file.
+/// The version of a wgs file.
 pub const VERSION: u32 = 1;
 
 /// The content of the default editable part in a fragment shader for a wgs file.

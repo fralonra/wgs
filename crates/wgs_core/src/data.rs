@@ -82,4 +82,9 @@ impl WgsData {
     pub fn textures_ref(&self) -> &Vec<Texture> {
         &self.textures
     }
+
+    /// Returns the version of the wgs data.
+    pub fn version(&self) -> u32 {
+        self.meta.version
+    }
 }
