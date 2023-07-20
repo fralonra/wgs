@@ -269,9 +269,9 @@ impl Runtime {
     }
 
     /// Creates a new runtime instance.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// ```rust
     /// use wgs_core::WgsData;
     /// use wgs_runtime_wgpu::{Runtime, RuntimeExt};
@@ -288,7 +288,7 @@ impl Runtime {
     ///     let size = window.inner_size();
     ///
     ///     runtime.resize(size.width as f32, size.height as f32);
-    /// 
+    ///
     ///     // Dealing with events.
     /// }
     /// ```
@@ -374,11 +374,11 @@ impl Runtime {
     }
 
     /// Finishes the current working frame and presents it.
-    /// 
+    ///
     /// Needs to be called after [`Self::frame_start`] and at the end of each frame.
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// - Will return an error if [`Self::frame_start`] haven't been called first.
     pub fn frame_finish(&mut self) -> Result<()> {
         if self.surface_texture.is_none() {
@@ -409,11 +409,11 @@ impl Runtime {
     }
 
     /// Starts a new frame.
-    /// 
+    ///
     /// Needs to be called before [`Self::frame_finish`] and at the begining of each frame.
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// - Will return an error if [`Self::frame_finish()`] haven't been called at the end of the last frame.
     pub fn frame_start(&mut self) -> Result<()> {
         if self.surface_texture.is_some() {
@@ -442,7 +442,7 @@ impl Runtime {
     }
 
     /// The maximum number of textures that can be used.
-    /// 
+    ///
     /// Depends on the [`wgpu::Limits::max_bind_groups`] of [`wgpu::Device`].
     pub fn max_texture_count(&self) -> u32 {
         self.device.limits().max_bind_groups
@@ -458,9 +458,9 @@ impl Runtime {
     }
 
     /// Renders other stuff on the target surface besides the wgs content.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// ```rust
     /// runtime.render_with(|_device, _queue, _view| {
     ///    // Other rendering like ui etc.
@@ -482,9 +482,9 @@ impl Runtime {
     }
 
     /// Request a capture on the given [`Viewport`] asynchronously.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// ```rust
     /// runtime.request_capture_image(
     ///    &viewport,
@@ -982,11 +982,3 @@ async fn view_into_buffer(
         bail!("Failed to map the buffer.")
     }
 }
-
-// fn log(msg: &str) {
-//     #[cfg(target_arch = "wasm32")]
-//     web_sys::console::log_1(&msg.into());
-
-//     #[cfg(not(target_arch = "wasm32"))]
-//     println!("{}", msg);
-// }
