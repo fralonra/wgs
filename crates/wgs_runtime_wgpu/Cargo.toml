@@ -22,7 +22,7 @@ anyhow = "1.0"
 bytemuck = { version = "1.12", features = ["derive"] }
 futures = "0.3"
 raw-window-handle = "0.5"
-wgpu = "0.16"
+wgpu = "0.17"
 wgs_core = { version = "0.1", path = "../wgs_core" }
 wgs_runtime_base = { version = "0.1", path = "../wgs_runtime_base" }
 
