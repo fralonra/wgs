@@ -1,11 +1,11 @@
 //! A wgs runtime powered by [wgpu](https://wgpu.rs/).
-//! 
+//!
 //! Can be run on both native and Web.
-//! 
+//!
 //! ## Examples
-//! 
+//!
 //! ### Integrate with Winit
-//! 
+//!
 //! ```rust
 //! use wgs_core::WgsData;
 //! use wgs_runtime_wgpu::{Runtime, RuntimeExt};
@@ -44,10 +44,10 @@
 //!             Event::RedrawRequested(_) => {
 //!                 /// Starts a new frame before doing the actual rendering.
 //!                 runtime.frame_start().unwrap();
-//! 
+//!
 //!                 /// The actual rendering for wgs.
 //!                 runtime.render().unwrap();
-//! 
+//!
 //!                 /// To render other stuff on the target surface besides the wgs content.
 //!                 // runtime.render_with(|_device, _queue, _view| {
 //!                 //     // Other rendering like ui etc.
@@ -67,14 +67,14 @@
 //!     });
 //! }
 //! ```
-//! 
+//!
 //! ### Integrate with Web
-//! 
+//!
 //! `wgs_runtime_wgpu` also compiles for Wasm32 and can be run on Web.
-//! 
+//!
 //! You can install it from [npm](https://www.npmjs.com/package/wgs-runtime-wgpu)
 //! or use a high-level library [`wgs-player`](https://github.com/fralonra/wgs-player).
-//! 
+//!
 
 mod pausable_instant;
 mod runtime;
@@ -82,6 +82,8 @@ mod uniform;
 mod viewport;
 #[cfg(target_arch = "wasm32")]
 mod web;
+
+pub use wgpu;
 
 pub use runtime::Runtime;
 pub use viewport::Viewport;
