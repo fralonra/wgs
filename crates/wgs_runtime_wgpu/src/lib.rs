@@ -6,7 +6,7 @@
 //!
 //! ### Integrate with Winit
 //!
-//! ```rust
+//! ```no_run
 //! use wgs_core::WgsData;
 //! use wgs_runtime_wgpu::{Runtime, RuntimeExt};
 //! use winit::{

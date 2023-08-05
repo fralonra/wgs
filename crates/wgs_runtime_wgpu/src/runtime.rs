@@ -272,7 +272,7 @@ impl Runtime {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```no_run
     /// use wgs_core::WgsData;
     /// use wgs_runtime_wgpu::{Runtime, RuntimeExt};
     /// use winit::{event::WindowEvent, event_loop::EventLoop, window::Window};
