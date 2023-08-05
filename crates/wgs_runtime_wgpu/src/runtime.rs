@@ -16,8 +16,9 @@ pub struct Runtime {
     #[cfg(not(target_arch = "wasm32"))]
     captured_callback: Option<(Viewport, Box<dyn FnOnce(&mut Self, u32, u32, Vec<u8>)>)>,
     device: wgpu::Device,
-    format: wgpu::TextureFormat,
     height: f32,
+    #[cfg(not(target_arch = "wasm32"))]
+    is_capture_supported: bool,
     is_paused: bool,
     pipeline: wgpu::RenderPipeline,
     queue: wgpu::Queue,
@@ -69,7 +70,7 @@ impl RuntimeExt for Runtime {
         self.pipeline = prepare_wgs_pipeline(
             &self.wgs,
             &self.device,
-            self.format,
+            self.surface_configuration.format,
             &self.shader_vert,
             &self.texture_bind_groups,
             &self.uniform_bind_group_layout,
@@ -86,7 +87,7 @@ impl RuntimeExt for Runtime {
             &self.device,
             &self.queue,
             &self.sampler,
-            self.format,
+            self.surface_configuration.format,
             &self.shader_vert,
             &self.uniform_bind_group_layout,
         )?;
@@ -311,8 +312,7 @@ impl Runtime {
         instance: wgpu::Instance,
         surface: wgpu::Surface,
     ) -> Result<Self> {
-        let (format, surface_configuration, device, queue) =
-            init_adapter(&instance, &surface).await?;
+        let (surface_configuration, device, queue) = init_adapter(&instance, &surface).await?;
 
         #[cfg(not(target_arch = "wasm32"))]
         {
@@ -331,7 +331,7 @@ impl Runtime {
             &device,
             &queue,
             &sampler,
-            format,
+            surface_configuration.format,
             &shader_vert,
             &uniform_bind_group_layout,
         )?;
@@ -340,8 +340,11 @@ impl Runtime {
             #[cfg(not(target_arch = "wasm32"))]
             captured_callback: None,
             device,
-            format,
             height: 0.0,
+            #[cfg(not(target_arch = "wasm32"))]
+            is_capture_supported: surface_configuration
+                .usage
+                .contains(wgpu::TextureUsages::COPY_SRC),
             is_paused: false,
             pipeline,
             queue,
@@ -370,7 +373,7 @@ impl Runtime {
 
     /// Returns the [`wgpu::TextureFormat`] used in the program.
     pub fn format(&self) -> wgpu::TextureFormat {
-        self.format
+        self.surface_configuration.format
     }
 
     /// Finishes the current working frame and presents it.
@@ -388,18 +391,20 @@ impl Runtime {
         if let Some(surface_texture) = self.surface_texture.take() {
             #[cfg(not(target_arch = "wasm32"))]
             if let Some((viewport, callback)) = self.captured_callback.take() {
-                let texture = &surface_texture.texture;
+                if self.is_capture_supported {
+                    let texture = &surface_texture.texture;
 
-                let size = texture.size();
+                    let size = texture.size();
 
-                let (width, height, buffer) = futures::executor::block_on(self.capture_image(
-                    &viewport,
-                    size.width,
-                    size.height,
-                    texture.as_image_copy(),
-                ))?;
+                    let (width, height, buffer) = futures::executor::block_on(self.capture_image(
+                        &viewport,
+                        size.width,
+                        size.height,
+                        texture.as_image_copy(),
+                    ))?;
 
-                callback(self, width, height, buffer);
+                    callback(self, width, height, buffer);
+                }
             }
 
             surface_texture.present();
@@ -414,7 +419,7 @@ impl Runtime {
     ///
     /// # Errors
     ///
-    /// - Will return an error if [`Self::frame_finish()`] haven't been called at the end of the last frame.
+    /// - Will return an error if [`Self::frame_finish`] haven't been called at the end of the last frame.
     pub fn frame_start(&mut self) -> Result<()> {
         if self.surface_texture.is_some() {
             bail!("Non-finished wgpu::SurfaceTexture found.")
@@ -427,13 +432,19 @@ impl Runtime {
         if let Some(surface_texture) = &self.surface_texture {
             self.texture_view = Some(surface_texture.texture.create_view(
                 &wgpu::TextureViewDescriptor {
-                    format: Some(self.format),
+                    format: Some(self.surface_configuration.format),
                     ..wgpu::TextureViewDescriptor::default()
                 },
             ));
         }
 
         Ok(())
+    }
+
+    /// Returns whether the runtime supports image capture.
+    #[cfg(not(target_arch = "wasm32"))]
+    pub fn is_capture_supported(&self) -> bool {
+        self.is_capture_supported
     }
 
     /// Returns whether the wgs rendering is currently paused.
@@ -477,11 +488,17 @@ impl Runtime {
     /// Request a capture on the given [`Viewport`] asynchronously.
     /// The four arguments the callback function receives are as follows:
     /// the runtime itself, the width of the image, the height of the image, the RGB8 buffer of the image.
+    ///
+    /// Remember to check [`Self::is_capture_supported`] first.
     #[cfg(not(target_arch = "wasm32"))]
     pub fn request_capture_image<F>(&mut self, viewport: &Viewport, f: F)
     where
         F: FnOnce(&mut Self, u32, u32, Vec<u8>) + 'static,
     {
+        if !self.is_capture_supported {
+            return;
+        }
+
         self.captured_callback = Some((viewport.clone(), Box::new(f)));
     }
 
@@ -498,6 +515,10 @@ impl Runtime {
         raw_height: u32,
         image_texture: wgpu::ImageCopyTexture<'_>,
     ) -> Result<(u32, u32, Vec<u8>)> {
+        if !self.is_capture_supported {
+            bail!("Capture is not supported.")
+        }
+
         let align_width = align_up(
             raw_width * DATA_PER_PIXEL * U8_SIZE,
             wgpu::COPY_BYTES_PER_ROW_ALIGNMENT,
@@ -688,12 +709,7 @@ fn create_texture(
 async fn init_adapter(
     instance: &wgpu::Instance,
     surface: &wgpu::Surface,
-) -> Result<(
-    wgpu::TextureFormat,
-    wgpu::SurfaceConfiguration,
-    wgpu::Device,
-    wgpu::Queue,
-)> {
+) -> Result<(wgpu::SurfaceConfiguration, wgpu::Device, wgpu::Queue)> {
     if let Some(adapter) = instance
         .request_adapter(&wgpu::RequestAdapterOptions {
             compatible_surface: Some(surface),
@@ -701,12 +717,9 @@ async fn init_adapter(
         })
         .await
     {
-        let swapchain_capabilities = surface.get_capabilities(&adapter);
-        let format = swapchain_capabilities.formats[0];
-
         let adapter_features = adapter.features();
 
-        let surface_configuration = init_surface_configuration(&surface, &adapter, format);
+        let surface_configuration = init_surface_configuration(&surface, &adapter);
 
         let (device, queue) = adapter
             .request_device(
@@ -722,7 +735,7 @@ async fn init_adapter(
             )
             .await?;
 
-        Ok((format, surface_configuration, device, queue))
+        Ok((surface_configuration, device, queue))
     } else {
         bail!("No adapters are found that suffice all the 'hard' options.")
     }
@@ -762,11 +775,17 @@ where
 fn init_surface_configuration(
     surface: &wgpu::Surface,
     adapter: &wgpu::Adapter,
-    format: wgpu::TextureFormat,
 ) -> wgpu::SurfaceConfiguration {
+    let swapchain_capabilities = surface.get_capabilities(&adapter);
+
+    let format = swapchain_capabilities.formats[0];
+
+    let is_capture_supported = swapchain_capabilities
+        .usages
+        .contains(wgpu::TextureUsages::COPY_SRC);
+
     let config = if let Some(mut config) = surface.get_default_config(adapter, 0, 0) {
-        #[cfg(not(target_arch = "wasm32"))]
-        {
+        if is_capture_supported {
             config.usage |= wgpu::TextureUsages::COPY_SRC;
         }
 
@@ -775,10 +794,11 @@ fn init_surface_configuration(
         config
     } else {
         wgpu::SurfaceConfiguration {
-            #[cfg(not(target_arch = "wasm32"))]
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC,
-            #[cfg(target_arch = "wasm32")]
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            usage: if is_capture_supported {
+                wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC
+            } else {
+                wgpu::TextureUsages::RENDER_ATTACHMENT
+            },
             format,
             width: 0,
             height: 0,
