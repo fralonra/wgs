@@ -34,3 +34,6 @@ wasm-bindgen-futures = "0.4"
 wasm-timer = "0.2"
 web-sys = { version = "0.3", features = ["HtmlCanvasElement"] }
 wgpu = { version = "0.16", features = ["webgl"] }
+
+[dev-dependencies]
+winit = "0.28"

@@ -458,14 +458,7 @@ impl Runtime {
     }
 
     /// Renders other stuff on the target surface besides the wgs content.
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// runtime.render_with(|_device, _queue, _view| {
-    ///    // Other rendering like ui etc.
-    /// }).unwrap();
-    /// ```
+    /// For example, you can do ui rendering here.
     pub fn render_with<F>(&mut self, mut f: F) -> Result<()>
     where
         F: FnMut(&wgpu::Device, &wgpu::Queue, &wgpu::TextureView) -> Result<()>,
@@ -482,17 +475,8 @@ impl Runtime {
     }
 
     /// Request a capture on the given [`Viewport`] asynchronously.
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// runtime.request_capture_image(
-    ///    &viewport,
-    ///    |runtime, width, height, buffer| {
-    ///        /// Doing something with the buffer.
-    ///    },
-    ///);
-    /// ```
+    /// The four arguments the callback function receives are as follows:
+    /// the runtime itself, the width of the image, the height of the image, the RGB8 buffer of the image.
     #[cfg(not(target_arch = "wasm32"))]
     pub fn request_capture_image<F>(&mut self, viewport: &Viewport, f: F)
     where
