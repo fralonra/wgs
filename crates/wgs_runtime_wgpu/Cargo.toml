@@ -1,6 +1,6 @@
 [package]
 name = "wgs_runtime_wgpu"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Fralonra <zoronlivingston@gmail.com>"]
 description = "Wgs format wgpu runtime"
 edition = "2021"
