@@ -21,8 +21,7 @@ opt-level = 'z'
 anyhow = "1.0"
 bytemuck = { version = "1.12", features = ["derive"] }
 futures = "0.3"
-raw-window-handle = "0.5"
-wgpu = "0.17"
+wgpu = "22.1"
 wgs_core = { version = "0.1", path = "../wgs_core" }
 wgs_runtime_base = { version = "0.1", path = "../wgs_runtime_base" }
 
@@ -36,4 +35,4 @@ web-sys = { version = "0.3", features = ["HtmlCanvasElement"] }
 wgpu = { version = "0.16", features = ["webgl"] }
 
 [dev-dependencies]
-winit = "0.28"
+winit = "0.30"

@@ -12,7 +12,7 @@ const U8_SIZE: u32 = std::mem::size_of::<u8>() as u32;
 const UNIFORM_GROUP_ID: u32 = 0;
 
 /// The wgpu wgs runtime.
-pub struct Runtime {
+pub struct Runtime<'w> {
     #[cfg(not(target_arch = "wasm32"))]
     captured_callback: Option<(Viewport, Box<dyn FnOnce(&mut Self, u32, u32, Vec<u8>)>)>,
     device: wgpu::Device,
@@ -24,7 +24,7 @@ pub struct Runtime {
     queue: wgpu::Queue,
     sampler: wgpu::Sampler,
     shader_vert: String,
-    surface: wgpu::Surface,
+    surface: wgpu::Surface<'w>,
     surface_configuration: wgpu::SurfaceConfiguration,
     surface_texture: Option<wgpu::SurfaceTexture>,
     texture_bind_groups: Vec<(wgpu::BindGroupLayout, wgpu::BindGroup)>,
@@ -39,7 +39,7 @@ pub struct Runtime {
     width: f32,
 }
 
-impl RuntimeExt for Runtime {
+impl RuntimeExt for Runtime<'_> {
     fn add_texture(&mut self, width: u32, height: u32, buffer: Vec<u8>) {
         self.texture_bind_groups.push(create_texture(
             &self.device,
@@ -149,10 +149,12 @@ impl RuntimeExt for Runtime {
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Load,
-                        store: true,
+                        store: wgpu::StoreOp::Store,
                     },
                 })],
                 depth_stencil_attachment: None,
+                timestamp_writes: None,
+                occlusion_query_set: None,
             });
 
             if let Some(viewport) = &self.viewport {
@@ -255,7 +257,7 @@ impl RuntimeExt for Runtime {
     }
 }
 
-impl Runtime {
+impl<'w> Runtime<'w> {
     #[cfg(target_arch = "wasm32")]
     pub async fn new(
         canvas: web_sys::HtmlCanvasElement,
@@ -294,9 +296,9 @@ impl Runtime {
     /// }
     /// ```
     #[cfg(not(target_arch = "wasm32"))]
-    pub async fn new<W>(w: &W, wgs: WgsData, viewport: Option<Viewport>) -> Result<Self>
+    pub async fn new<W>(w: W, wgs: WgsData, viewport: Option<Viewport>) -> Result<Self>
     where
-        W: raw_window_handle::HasRawWindowHandle + raw_window_handle::HasRawDisplayHandle,
+        W: wgpu::WindowHandle + 'w,
     {
         let instance = init_instance();
 
@@ -310,7 +312,7 @@ impl Runtime {
         wgs: WgsData,
         viewport: Option<Viewport>,
         instance: wgpu::Instance,
-        surface: wgpu::Surface,
+        surface: wgpu::Surface<'w>,
     ) -> Result<Self> {
         let (surface_configuration, device, queue) = init_adapter(&instance, &surface).await?;
 
@@ -606,17 +608,20 @@ fn build_pipeline(
         vertex: wgpu::VertexState {
             module: &vs_module,
             entry_point: "main",
+            compilation_options: wgpu::PipelineCompilationOptions::default(),
             buffers: &[],
         },
         fragment: Some(wgpu::FragmentState {
             module: &fs_module,
             entry_point: "main",
+            compilation_options: wgpu::PipelineCompilationOptions::default(),
             targets: &[Some(format.into())],
         }),
         primitive: wgpu::PrimitiveState::default(),
         depth_stencil: None,
         multisample: wgpu::MultisampleState::default(),
         multiview: None,
+        cache: None,
     });
 
     Ok(pipeline)
@@ -706,9 +711,9 @@ fn create_texture(
     (texture_bind_group_layout, texture_bind_group)
 }
 
-async fn init_adapter(
+async fn init_adapter<'w>(
     instance: &wgpu::Instance,
-    surface: &wgpu::Surface,
+    surface: &wgpu::Surface<'w>,
 ) -> Result<(wgpu::SurfaceConfiguration, wgpu::Device, wgpu::Queue)> {
     if let Some(adapter) = instance
         .request_adapter(&wgpu::RequestAdapterOptions {
@@ -725,11 +730,12 @@ async fn init_adapter(
             .request_device(
                 &wgpu::DeviceDescriptor {
                     label: Some("Device Descriptor"),
-                    features: adapter_features & wgpu::Features::default(),
+                    required_features: adapter_features & wgpu::Features::default(),
                     #[cfg(target_arch = "wasm32")]
-                    limits: wgpu::Limits::downlevel_webgl2_defaults(),
+                    required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
                     #[cfg(not(target_arch = "wasm32"))]
-                    limits: wgpu::Limits::downlevel_defaults(),
+                    required_limits: wgpu::Limits::downlevel_defaults(),
+                    memory_hints: wgpu::MemoryHints::default(),
                 },
                 None,
             )
@@ -746,7 +752,9 @@ fn init_instance() -> wgpu::Instance {
 
     let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
         backends,
+        flags: wgpu::InstanceFlags::debugging(),
         dx12_shader_compiler: wgpu::Dx12Compiler::default(),
+        gles_minor_version: wgpu::Gles3MinorVersion::Automatic,
     });
 
     instance
@@ -763,11 +771,11 @@ fn init_surface(
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-fn init_surface<W>(instance: &wgpu::Instance, w: &W) -> Result<wgpu::Surface>
+fn init_surface<'w, W>(instance: &wgpu::Instance, w: W) -> Result<wgpu::Surface<'w>>
 where
-    W: raw_window_handle::HasRawWindowHandle + raw_window_handle::HasRawDisplayHandle,
+    W: wgpu::WindowHandle + 'w,
 {
-    let surface = unsafe { instance.create_surface(w)? };
+    let surface = instance.create_surface(w)?;
 
     Ok(surface)
 }
@@ -803,6 +811,7 @@ fn init_surface_configuration(
             width: 0,
             height: 0,
             present_mode: wgpu::PresentMode::AutoVsync,
+            desired_maximum_frame_latency: 2,
             alpha_mode: wgpu::CompositeAlphaMode::Auto,
             view_formats: vec![format],
         }
@@ -957,7 +966,7 @@ fn trim_image_buffer(viewport: &Viewport, align_width: usize, buffer: &[u8]) -> 
 async fn view_into_buffer(
     device: &wgpu::Device,
     viewport: &Viewport,
-    raw_width: u32,
+    _raw_width: u32,
     raw_height: u32,
     raw_buffer: &wgpu::Buffer,
 ) -> Result<Vec<u8>> {

@@ -8,4 +8,4 @@ publish = false
 futures = "0.3"
 wgs_core = { path = "../wgs_core" }
 wgs_runtime_wgpu = { path = "../wgs_runtime_wgpu" }
-winit = "0.28"
+winit = "0.30"

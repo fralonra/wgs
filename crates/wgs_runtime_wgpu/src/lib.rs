@@ -4,67 +4,85 @@
 //!
 //! ## Examples
 //!
-//! ### Integrate with Winit
+//! ### Integrate with Winit 0.30
 //!
 //! ```no_run
-//! use wgs_core::WgsData;
-//! use wgs_runtime_wgpu::{Runtime, RuntimeExt};
-//! use winit::{
-//!     event::{Event, WindowEvent},
-//!     event_loop::{ControlFlow, EventLoop},
-//!     window::Window,
-//! };
+//! use winit::event_loop::{ControlFlow, EventLoop};
 //!
-//! fn main() {
-//!     let event_loop = EventLoop::new();
+//! fn main() -> Result<(), impl std::error::Error> {
+//!     let event_loop = EventLoop::new()?;
+//!     event_loop.set_control_flow(ControlFlow::Wait);
 //!
-//!     let window = Window::new(&event_loop).unwrap();
+//!     let mut app = app::App::default();
+//!     event_loop.run_app(&mut app)
+//! }
 //!
-//!     let mut runtime =
-//!         futures::executor::block_on(Runtime::new(&window, WgsData::default(), None)).unwrap();
+//! mod app {
+//!     use std::sync::Arc;
+//!     use wgs_core::WgsData;
+//!     use wgs_runtime_wgpu::{Runtime, RuntimeExt};
+//!     use winit::{
+//!         application::ApplicationHandler,
+//!         event::WindowEvent,
+//!         event_loop::ActiveEventLoop,
+//!         window::{Window, WindowId},
+//!     };
 //!
-//!     let size = window.inner_size();
+//!     #[derive(Default)]
+//!     pub struct App<'a> {
+//!         runtime: Option<Runtime<'a>>,
+//!         window: Option<Arc<Window>>,
+//!     }
 //!
-//!     /// Needs to set the width and height of the runtime before rendering.
-//!     runtime.resize(size.width as f32, size.height as f32);
+//!     impl<'a> ApplicationHandler for App<'a> {
+//!         fn resumed(&mut self, event_loop: &ActiveEventLoop) {
+//!             let window = event_loop
+//!                 .create_window(Window::default_attributes())
+//!                 .unwrap();
+//!             let window = Arc::new(window);
 //!
-//!     event_loop.run(move |event, _, control_flow| {
-//!         *control_flow = ControlFlow::Wait;
+//!             let mut runtime =
+//!                 futures::executor::block_on(Runtime::new(window.clone(), WgsData::default(), None))
+//!                     .unwrap();
+//!             let size = window.inner_size();
+//!             runtime.resize(size.width as f32, size.height as f32);
 //!
-//!         match event {
-//!             Event::RedrawEventsCleared => window.request_redraw(),
-//!             Event::WindowEvent {
-//!                 event: WindowEvent::Resized(size),
-//!                 ..
-//!             } => {
-//!                 runtime.resize(size.width as f32, size.height as f32);
-//!
-//!                 window.request_redraw();
-//!             }
-//!             Event::RedrawRequested(_) => {
-//!                 /// Starts a new frame before doing the actual rendering.
-//!                 runtime.frame_start().unwrap();
-//!
-//!                 /// The actual rendering for wgs.
-//!                 runtime.render().unwrap();
-//!
-//!                 /// To render other stuff on the target surface besides the wgs content.
-//!                 // runtime.render_with(|_device, _queue, _view| {
-//!                 //     // Other rendering like ui etc.
-//!                 // }).unwrap();
-//!
-//!                 /// Remember to finish the current working frame.
-//!                 runtime.frame_finish().unwrap();
-//!
-//!                 window.request_redraw();
-//!             }
-//!             Event::WindowEvent {
-//!                 event: WindowEvent::CloseRequested,
-//!                 ..
-//!             } => *control_flow = ControlFlow::Exit,
-//!             _ => {}
+//!             self.runtime = Some(runtime);
+//!             self.window = Some(window)
 //!         }
-//!     });
+//!
+//!         fn window_event(
+//!             &mut self,
+//!             event_loop: &ActiveEventLoop,
+//!             _id: WindowId,
+//!             event: WindowEvent,
+//!         ) {
+//!             match event {
+//!                 WindowEvent::CloseRequested => {
+//!                     event_loop.exit();
+//!                 }
+//!                 WindowEvent::RedrawRequested => {
+//!                     if let Some(runtime) = &mut self.runtime {
+//!                         runtime.frame_start().unwrap();
+//!
+//!                         runtime.render().unwrap();
+//!
+//!                         runtime.frame_finish().unwrap();
+//!                     }
+//!
+//!                     if let Some(window) = &self.window {
+//!                         window.request_redraw();
+//!                     }
+//!                 }
+//!                 WindowEvent::Resized(size) => {
+//!                     if let Some(runtime) = &mut self.runtime {
+//!                         runtime.resize(size.width as f32, size.height as f32);
+//!                     }
+//!                 }
+//!                 _ => (),
+//!             }
+//!         }
+//!     }
 //! }
 //! ```
 //!
