@@ -76,8 +76,6 @@ fn main_image(frag_color: vec4<f32>, frag_coord: vec2<f32>) -> vec4<f32> {
 
 [wgs_runtime_wgpu](https://github.com/fralonra/wgs/tree/master/crates/wgs_runtime_wgpu) is all you need to run `wgs` file on a native platform.
 
-Here's an [example](https://github.com/fralonra/wgs/tree/master/crates/winit_demo) about how to integrate `wgs` with [winit](https://github.com/rust-windowing/winit).
-
 You can write your own runtime implementation as long as it implements [`RuntimeExt`](https://github.com/fralonra/wgs/blob/master/crates/wgs_runtime_base/src/runtime.rs).
 
 ### Web
