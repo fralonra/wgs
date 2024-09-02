@@ -5,3 +5,18 @@
 ![MIT](https://img.shields.io/badge/license-MIT-blue.svg)
 
 A `wgs` runtime powered by [wgpu](https://wgpu.rs/).
+
+## wgpu compatibilities
+
+### native
+
+| wgs_runtime_wgpu | wgpu |
+| ---------------- | ---- |
+| 0.1.2            | 0.17 |
+| 0.0.1            | 0.16 |
+
+### wasm
+
+| wgs_runtime_wgpu | wgpu |
+| ---------------- | ---- |
+| 0.0.1            | 0.16 |
