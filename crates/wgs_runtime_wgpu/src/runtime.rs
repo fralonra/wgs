@@ -272,29 +272,6 @@ impl<'w> Runtime<'w> {
     }
 
     /// Creates a new runtime instance.
-    ///
-    /// # Examples
-    ///
-    /// ```no_run
-    /// use wgs_core::WgsData;
-    /// use wgs_runtime_wgpu::{Runtime, RuntimeExt};
-    /// use winit::{event::WindowEvent, event_loop::EventLoop, window::Window};
-    ///
-    /// fn main() {
-    ///     let event_loop = EventLoop::new();
-    ///
-    ///     let window = Window::new(&event_loop).unwrap();
-    ///
-    ///     let mut runtime =
-    ///         futures::executor::block_on(Runtime::new(&window, WgsData::default(), None)).unwrap();
-    ///
-    ///     let size = window.inner_size();
-    ///
-    ///     runtime.resize(size.width as f32, size.height as f32);
-    ///
-    ///     // Dealing with events.
-    /// }
-    /// ```
     #[cfg(not(target_arch = "wasm32"))]
     pub async fn new<W>(w: W, wgs: WgsData, viewport: Option<Viewport>) -> Result<Self>
     where
