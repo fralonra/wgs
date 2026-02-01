@@ -1,0 +1,14 @@
+[package]
+name = "wgs_core"
+version = "0.1.2"
+authors = ["Crux <lepus@keemail.me>"]
+description = "Gyo format"
+edition = "2021"
+homepage = "https://github.com/crux161/gyo"
+license = "MIT"
+readme = "../../README.md"
+repository = "https://github.com/crux161/gyo"
+keywords = ["gyo", "gyosho", "wgsl", "graphics", "creative-coding"]
+
+[dependencies]
+binrw = "0.11"

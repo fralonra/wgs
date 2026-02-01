@@ -1,0 +1,29 @@
+[package]
+name = "hanga"
+version = "0.1.2"
+authors = ["Crux <lepus@keemail.me>"]
+description = "Gyo format wgpu runtime"
+edition = "2021"
+homepage = "https://github.com/crux161/gyo"
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/crux161/gyo"
+keywords = ["gyo", "gyosho", "wgsl", "graphics", "creative-coding"]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[profile.release]
+lto = true
+opt-level = 'z'
+
+[dependencies]
+wgpu = "28.0.0"
+anyhow = "1.0"
+bytemuck = { version = "1.12", features = ["derive"] }
+futures = "0.3"
+wgs_core = { version = "0.1", path = "../wgs_core" }
+wgs_runtime_base = { version = "0.1", path = "../wgs_runtime_base" }
+
+[dev-dependencies]
+winit = "0.30"
